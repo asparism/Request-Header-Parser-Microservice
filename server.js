@@ -5,9 +5,16 @@
 
 'use strict';
 
+// call packages
 var fs = require('fs');
 var express = require('express');
+const os = require('os');
+const requestIP = require('request-ip');
+const ip = require('ip');
+const useragent = require('express-useragent');
+
 var app = express();
+
 
 if (!process.env.DISABLE_XORIGIN) {
   app.use(function(req, res, next) {
@@ -22,6 +29,29 @@ if (!process.env.DISABLE_XORIGIN) {
   });
 }
 
+const requestIp = require('request-ip');
+app.use(requestIp.mw())
+ 
+app.use(function(req, res, next) {
+  res.locals.ip = req.clientIp;
+    next();
+});
+
+app.use(useragent.express());
+app.use(function(req, res, next){
+  res.locals.os = req.useragent.os;
+  next();
+})
+
+app.use(function(req, res) {
+  var languages = req.headers["accept-language"];
+  var languagesArray = languages.split(',');
+  var primaryLanguage = languagesArray[0];
+  var rhpObj = {"ip" : res.locals.ip, "os" : res.locals.os, "language" : primaryLanguage};
+  res.json(rhpObj);
+})
+
+// middleware ??
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.route('/_api/package.json')
